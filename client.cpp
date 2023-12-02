@@ -72,7 +72,36 @@ int main(int argc, char *argv[]) {
 
     // TODO: Read from file, and initiate reliable data transfer to the server
 
- 
+    int HEADER_SIZE = 2; // only seq_num for now
+    // char packet[HEADER_SIZE + PAYLOAD_SIZE + 1];
+    char packet[PAYLOAD_SIZE];
+    unsigned int file_length;
+    // char* file_content;
+    fseek(fp, 0, SEEK_END);
+    file_length = ftell(fp);
+    // file_content = (char*) malloc(file_length);
+    fseek(fp, 0, SEEK_SET);
+    seq_num = 0;
+    
+    while (true){
+        //printf("while loop running\n");
+        unsigned int bytes_read = fread(buffer, 1, PAYLOAD_SIZE, fp);
+        if (bytes_read < PAYLOAD_SIZE)
+            buffer[bytes_read] = '\0';
+        // packet[0] = seq_num >> 8;
+        // packet[1] = seq_num & 0xFF
+        memcpy(packet, buffer, PAYLOAD_SIZE);
+        //packet[HEADER_SIZE + PAYLOAD_SIZE] = '\0';
+        printf("%s", packet);
+        send(send_sockfd, packet, sizeof(packet), 0);
+        if (seq_num == 0)
+            seq_num = 1;
+        else 
+            seq_num = 0;
+        if (bytes_read < PAYLOAD_SIZE)
+            break;
+    }
+    
     
     fclose(fp);
     close(listen_sockfd);

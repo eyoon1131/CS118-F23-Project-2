@@ -5,9 +5,9 @@ all: clean build
 
 default: build
 
-build: server.c client.c
+build: server.c client.cpp
 	gcc -Wall -Wextra -o server server.c
-	gcc -Wall -Wextra -o client client.c
+	gcc -Wall -Wextra -o client client.cpp
 
 clean:
 	rm -f server client output.txt project2.zip
