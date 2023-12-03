@@ -5,8 +5,8 @@ all: clean build
 
 default: build
 
-build: server.c client.cpp
-	gcc -Wall -Wextra -o server server.c
+build: server.cpp client.cpp
+	gcc -Wall -Wextra -o server server.cpp
 	gcc -Wall -Wextra -o client client.cpp
 
 clean:
