@@ -53,6 +53,12 @@ int main() {
 
     // TODO: Receive file from the client and save it as output.txt
 
+
+    printf("binded");
+    recv_len = recvfrom(listen_sockfd, &buffer, sizeof(buffer), 0, (struct sockaddr *) &client_addr_from, &addr_size);
+    printf("%s", buffer.payload);
+    printRecv(&buffer);
+
     
 
     fclose(fp);
