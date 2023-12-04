@@ -153,24 +153,26 @@ int main() {
             // }
 
             if (buffer.seqnum == expected_seq_num){
-                fprintf(fp, "%.*s",data_window[0].length,data_window[0].payload);
-                printf("payload: %.*s\n",data_window[0].length,data_window[0].payload);
+                 fprintf(fp, "%.*s",data_window[0].length,data_window[0].payload);
+                //printf("payload: %.*s\n",data_window[0].length,data_window[0].payload);
                 expected_seq_num+=data_window[0].length;
+                data_window[0].length=0;
+
                 if(data_window[0].last){
-                    server_isLast=data_window[0].last;
+                    server_isLast=1;
                 }
                 int i;
                 for (i = 1; i < 4; i++) {
                     //for the packets in the window
                     if (data_window[i].length != 0) {
-                        fprintf(fp, "%.*s",data_window[i].length,data_window[i].payload);
+                        fprintf(fp, "%.*s", data_window[i].length,data_window[i].payload);
                         expected_seq_num+=data_window[i].length;
 
                         //reset datawindow:
                         data_window[i].length=0;
                         //
                         if(data_window[i].last){
-                            server_isLast=data_window[i].last;
+                            server_isLast=1;
                         }
                     }
                     else {
@@ -200,8 +202,13 @@ int main() {
         printSend(&ack_pkt, 0);
         //printf("%s", buffer.payload);
         //printRecv(&buffer);
-        if (server_isLast)
+        if (server_isLast){
+            for(int i =0;i<3;i++){
+                sendto(send_sockfd, &ack_pkt, sizeof(ack_pkt), 0,  (struct sockaddr *) &client_addr_to, sizeof(client_addr_to));
+                 printSend(&ack_pkt, 0);
+            }
             break;
+        }
     }
 
     fclose(fp);
