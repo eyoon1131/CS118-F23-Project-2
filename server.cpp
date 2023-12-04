@@ -5,14 +5,15 @@
 #include <unistd.h>
 #include <math.h>
 #include "utils.h"
+#include <climits>
 
 int main() {
     int listen_sockfd, send_sockfd;
     struct sockaddr_in server_addr, client_addr_from, client_addr_to;
     struct packet buffer;
     socklen_t addr_size = sizeof(client_addr_from);
-    int expected_seq_num = 0;
-    int recv_len;
+    unsigned int expected_seq_num = 0;
+    unsigned int recv_len;
     struct packet ack_pkt;
 
     // Create a UDP socket for sending
@@ -53,7 +54,7 @@ int main() {
 
     // TODO: Receive file from the client and save it as output.txt
 
-    int next_expected_seq = PAYLOAD_SIZE;
+    unsigned int next_expected_seq = PAYLOAD_SIZE;
     
     char data_window[4][PAYLOAD_SIZE + 1];
     char isLast = 0;
@@ -63,6 +64,7 @@ int main() {
         recv_len = recvfrom(listen_sockfd, &buffer, sizeof(buffer), 0, 
             (struct sockaddr *) &client_addr_from, &addr_size);
         printRecv(&buffer);
+        printf("expected seq num: %d", expected_seq_num);
         if (buffer.last)
             break;
         if (buffer.length < PAYLOAD_SIZE)
@@ -71,12 +73,13 @@ int main() {
             char payload[PAYLOAD_SIZE + 1];
             memcpy(payload, buffer.payload, buffer.length);
             payload[PAYLOAD_SIZE] = '\0';
-            int window_pos = ceil((double)(buffer.seqnum - expected_seq_num) / PAYLOAD_SIZE);
+            unsigned int window_pos = ceil((double)(buffer.seqnum - expected_seq_num) / PAYLOAD_SIZE);
             memcpy(data_window[window_pos], payload, sizeof(payload));
             if (buffer.seqnum == expected_seq_num){
                 fprintf(fp, "%s", data_window[0]);
                 int i;
                 for (i = 1; i < 4; i++) {
+                    //for the packets in the window
                     if (data_window[i][0] != '\0') {
                         fprintf(fp, "%s", data_window[i]);
                     }
@@ -90,7 +93,7 @@ int main() {
                     }
                     
                 }                 
-                expected_seq_num = buffer.seqnum + i * buffer.length;
+                expected_seq_num = (buffer.seqnum + i * buffer.length);
             } 
             build_packet(&ack_pkt, 0, expected_seq_num, isLast, 1, 0, NULL);
         }

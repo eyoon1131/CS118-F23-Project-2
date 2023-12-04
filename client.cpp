@@ -16,8 +16,8 @@ int main(int argc, char *argv[]) {
     struct packet pkt;
     struct packet ack_pkt;
     char buffer[PAYLOAD_SIZE];
-    unsigned short seq_num = 0;
-    unsigned short ack_num = 0;
+    unsigned int seq_num = 0;
+    unsigned int ack_num = 0;
     char last = 0;
     char ack = 0;
 
@@ -87,72 +87,18 @@ int main(int argc, char *argv[]) {
     // file_content = (char*) malloc(file_length);
     fseek(fp, 0, SEEK_SET);
     seq_num = 0;
-    unsigned short expected_seq_num = 0;
+    unsigned int expected_seq_num = 0;
     char isLast = 0;
     bool timeout = false;
     struct packet window[4];
     int last_sent_pkt_pos = -1;
     
- //   while (true) {
-    //     //printf("while loop running\n");       
-    //     //if (seq_num == expected_seq_num) {
-    //     if (ACK_received) {
-    //         for (int i = last_sent_pkt_pos + 1; i < 4; i++) {
-    //             int window_pos = i;
-    //             unsigned int bytes_read = fread(buffer, 1, PAYLOAD_SIZE, fp);
-    //             if (bytes_read < PAYLOAD_SIZE) {
-    //                 buffer[bytes_read] = '\0';
-    //                 bytes_read++;
-    //                 isLast = 1;
-    //                 i = 3;
-    //             }
-    //             build_packet(&window[window_pos], seq_num, 0, isLast, 0, bytes_read, buffer);
-    //         }
-    //     }
-    //     // printRecv(&pkt);
-    //     // printf("%s", pkt.payload);
-    //     for (int i = last_sent_pkt_pos + 1; i < 4; i++) {
-    //         sendto(send_sockfd, &window[i], sizeof(window[i]), 0, (struct sockaddr *) &server_addr_to, addr_size);
-    //         last_sent_pkt_pos = i;
-    //     }
-    //     // wait for ACK or timer
-    //     clock_t start = clock(), elapsed;
-    //     unsigned int msec_timer = 0;
-    //     timeout = true;
-    //     while (msec_timer < 1000){
-    //         // if ACK received, exit
-    //         if (recvfrom(listen_sockfd, &ack_pkt, sizeof(ack_pkt), MSG_DONTWAIT, 
-    //             (struct sockaddr *) &server_addr_from, &addr_size) > 0) {
-    //             ACK_received = true;
-    //             ack_num = ack_pkt.acknum;
-    //             int i;
-    //             for (i = 0; i < 4; i++) {
-    //                 if (window[i].seqnum == ack_num) {
-    //                     for (int j = 0; j < 4 - i; j++) {
-    //                         window[j] = window[j + i];
-    //                         last_sent_pkt_pos = j;
-    //                     } 
-    //                     break;
-    //                 }
-    //             }
-    //             if (i == 4) 
-    //                 last_sent_pkt_pos = -1;               
-    //             // seq_num = ack_pkt.acknum;
-    //             break;
-    //         }
-    //         elapsed = clock() - start;
-    //         msec_timer = 1000 * elapsed / CLOCKS_PER_SEC;
-    //     }
-    //     if (ACK_received){
-    //         if (isLast)
-    //             break;
-    //     }
-    // }
 
     bool reset = false;
     clock_t start = clock(), elapsed;
     unsigned int msec_timer = 0;
     unsigned int send_base = 0;
+    //unsigned int rwnd = 4;
     while (true) {
         if (reset) {
             start = clock();
