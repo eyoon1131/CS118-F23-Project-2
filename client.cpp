@@ -84,11 +84,14 @@ int main(int argc, char *argv[]) {
     // char* file_content;
     fseek(fp, 0, SEEK_END);
     file_length = ftell(fp);
+        printf("file length: %d\n",file_length);
+
     // file_content = (char*) malloc(file_length);
     fseek(fp, 0, SEEK_SET);
     seq_num = 0;
     unsigned int expected_seq_num = 0;
-    char isLast = 0;
+    char server_isLast = 0;
+    char client_isLast = 0;
     bool timeout = false;
     struct packet window[4];
     int last_sent_pkt_pos = -1;
@@ -113,18 +116,25 @@ int main(int argc, char *argv[]) {
             if (last_sent_pkt_pos == -1)
                 reset = true;
             unsigned int bytes_read = fread(buffer, 1, PAYLOAD_SIZE, fp);
-            if (bytes_read < PAYLOAD_SIZE) {
-                buffer[bytes_read] = '\0';
-                bytes_read++;
+            if (seq_num+bytes_read == file_length) {
+                //buffer[bytes_read] = '\0';
+                //bytes_read++;
+                client_isLast=1;
             }
-            build_packet(&window[last_sent_pkt_pos + 1], seq_num, 0, isLast, 0, bytes_read, buffer);
+            build_packet(&window[last_sent_pkt_pos + 1], seq_num, 0, client_isLast, 0, bytes_read, buffer);
             sendto(send_sockfd, &window[last_sent_pkt_pos + 1], sizeof(window[last_sent_pkt_pos + 1]), 
                 0, (struct sockaddr *) &server_addr_to, addr_size);
             printSend(&window[last_sent_pkt_pos + 1], 0);
-            if (isLast)
+
+
+            if (server_isLast){
                 break; 
+            }
+
+
             last_sent_pkt_pos++;
             seq_num = seq_num + bytes_read;
+            printf("seq num after packet sent: %d\n",seq_num);
             continue;
         }
         if (msec_timer > 1000) {
@@ -137,6 +147,9 @@ int main(int argc, char *argv[]) {
         if (recvfrom(listen_sockfd, &ack_pkt, sizeof(ack_pkt), MSG_DONTWAIT, 
             (struct sockaddr *) &server_addr_from, &addr_size) > 0) {
             printRecv(&ack_pkt);
+            // if(ack_pkt.last){
+            //     break;
+            // }
             ack_num = ack_pkt.acknum;
             if (ack_num > send_base) {
                 send_base = ack_num;
@@ -153,7 +166,7 @@ int main(int argc, char *argv[]) {
                 }
                 if (i == 4) 
                     last_sent_pkt_pos = -1;
-                isLast = ack_pkt.last;
+                server_isLast = ack_pkt.last;
             }         
             // seq_num = ack_pkt.acknum;
             continue;

@@ -6,13 +6,14 @@
 #include <math.h>
 #include "utils.h"
 #include <climits>
+#include <vector>
 
 int main() {
     int listen_sockfd, send_sockfd;
     struct sockaddr_in server_addr, client_addr_from, client_addr_to;
     struct packet buffer;
     socklen_t addr_size = sizeof(client_addr_from);
-    unsigned int expected_seq_num = 0;
+    unsigned int expected_seq_num = 0; // first unsent byte
     unsigned int recv_len;
     struct packet ack_pkt;
 
@@ -52,50 +53,144 @@ int main() {
     // Open the target file for writing (always write to output.txt)
     FILE *fp = fopen("output.txt", "wb");
 
+    // // TODO: Receive file from the client and save it as output.txt
+
+    
+    // char data_window[4][PAYLOAD_SIZE + 1];
+    // char server_isLast = 0;
+    // char client_isLast = 0;
+    // for (int i = 0; i < 4; i++)
+    //     data_window[i][0] = '\0';
+    // while (true) {
+    //     recv_len = recvfrom(listen_sockfd, &buffer, sizeof(buffer), 0, 
+    //         (struct sockaddr *) &client_addr_from, &addr_size);
+    //     printRecv(&buffer);
+    //     printf("expected seq num: %d\n", expected_seq_num);
+    //     //printf("payload: %s\n",buffer.payload);
+    //     if (buffer.last)
+    //         break;
+    //     // if (buffer.length < PAYLOAD_SIZE)
+    //     //     isLast = 1;
+    //     if (buffer.seqnum >= expected_seq_num) {
+    //         char payload[PAYLOAD_SIZE + 1];
+    //         memcpy(payload, buffer.payload, buffer.length);
+    //         payload[PAYLOAD_SIZE] = '\0';
+    //         unsigned int window_pos = ceil((double)(buffer.seqnum - expected_seq_num) / PAYLOAD_SIZE);
+    //         memcpy(data_window[window_pos], payload, sizeof(payload));
+    //         if (buffer.seqnum == expected_seq_num){
+    //             fprintf(fp, "%s", data_window[0]);
+    //             //printf("%s\n",data_window[0]);
+    //             expected_seq_num+=strlen(data_window[0]);
+    //             int i;
+    //             for (i = 1; i < 4; i++) {
+    //                 //for the packets in the window
+    //                 if (data_window[i][0] != '\0') {
+    //                     fprintf(fp, "%s", data_window[i]);
+    //                     expected_seq_num+=strlen(data_window[i]);
+
+    //                 }
+    //                 else {
+    //                     int j;
+    //                     for (j = 0; j < 4 - i; j++)
+    //                         memcpy(data_window[j], data_window[j + i], sizeof(data_window[j + i]));
+    //                     for (; j < 4; j++)
+    //                         data_window[j][0] = '\0';
+    //                     break;
+    //                 }
+                    
+    //             }                 
+    //             //expected_seq_num = (expected_seq_num + i * buffer.length);
+    //         } 
+    //         build_packet(&ack_pkt, 0, expected_seq_num, server_isLast, 1, 0, NULL);
+    //     }
+    //     else {
+    //         build_packet(&ack_pkt, 0, expected_seq_num, buffer.last, 1, 0, NULL);
+    //     }
+    //     sendto(send_sockfd, &ack_pkt, sizeof(ack_pkt), 0, 
+    //         (struct sockaddr *) &client_addr_to, sizeof(client_addr_to));
+    //     printSend(&ack_pkt, 0);
+    //     //printf("%s", buffer.payload);
+    //     //printRecv(&buffer);
+    //     if (buffer.last)
+    //         break;
+    // }
+
+    //printf("%s", )
+
     // TODO: Receive file from the client and save it as output.txt
 
-    unsigned int next_expected_seq = PAYLOAD_SIZE;
     
-    char data_window[4][PAYLOAD_SIZE + 1];
-    char isLast = 0;
+    struct packet data_window[4];
+   
+    char server_isLast = 0;
+    char client_isLast = 0;
     for (int i = 0; i < 4; i++)
-        data_window[i][0] = '\0';
+        data_window[i].length = 0;
     while (true) {
         recv_len = recvfrom(listen_sockfd, &buffer, sizeof(buffer), 0, 
             (struct sockaddr *) &client_addr_from, &addr_size);
         printRecv(&buffer);
-        printf("expected seq num: %d", expected_seq_num);
-        if (buffer.last)
-            break;
-        if (buffer.length < PAYLOAD_SIZE)
-            isLast = 1;
+        //printf("expected seq num: %d\n", expected_seq_num);
+        //printf("payload: %s\n",buffer.payload);
+
+
+        // if (buffer.last)
+        //     break;
+
+
+        // if (buffer.length < PAYLOAD_SIZE)
+        //     isLast = 1;
         if (buffer.seqnum >= expected_seq_num) {
-            char payload[PAYLOAD_SIZE + 1];
-            memcpy(payload, buffer.payload, buffer.length);
-            payload[PAYLOAD_SIZE] = '\0';
+            //char payload[PAYLOAD_SIZE + 1];
+            //memcpy(payload, buffer.payload, buffer.length);
+            //payload[PAYLOAD_SIZE] = '\0';
             unsigned int window_pos = ceil((double)(buffer.seqnum - expected_seq_num) / PAYLOAD_SIZE);
-            memcpy(data_window[window_pos], payload, sizeof(payload));
+            //memcpy(&data_window[window_pos], &buffer, sizeof(buffer));
+            data_window[window_pos]=buffer;
+            // if(data_window[window_pos].length<PAYLOAD_SIZE){
+            //    // printf("payload altered\n");
+            //     data_window[window_pos].payload[data_window[window_pos].length]='\0';
+            // }
+
             if (buffer.seqnum == expected_seq_num){
-                fprintf(fp, "%s", data_window[0]);
+                fprintf(fp, "%.*s",data_window[0].length,data_window[0].payload);
+                printf("payload: %.*s\n",data_window[0].length,data_window[0].payload);
+                expected_seq_num+=data_window[0].length;
+                if(data_window[0].last){
+                    server_isLast=data_window[0].last;
+                }
                 int i;
                 for (i = 1; i < 4; i++) {
                     //for the packets in the window
-                    if (data_window[i][0] != '\0') {
-                        fprintf(fp, "%s", data_window[i]);
+                    if (data_window[i].length != 0) {
+                        fprintf(fp, "%.*s",data_window[i].length,data_window[i].payload);
+                        expected_seq_num+=data_window[i].length;
+
+                        //reset datawindow:
+                        data_window[i].length=0;
+                        //
+                        if(data_window[i].last){
+                            server_isLast=data_window[i].last;
+                        }
                     }
                     else {
                         int j;
-                        for (j = 0; j < 4 - i; j++)
-                            memcpy(data_window[j], data_window[j + i], sizeof(data_window[j + i]));
-                        for (; j < 4; j++)
-                            data_window[j][0] = '\0';
+                        for (j = 0; j < 4 - i; j++){
+                            //memcpy(&data_window[j], &data_window[j + i], sizeof(data_window[j + i]));
+                            data_window[j]=data_window[j+i];
+                        }
+                        for (; j < 4; j++){
+                            data_window[j].length = 0;
+                            //data_window[j].payload[0]='\0';
+                            //memset(data_window[j].payload, 0, sizeof(data_window[j].payload));
+                        }
                         break;
                     }
                     
                 }                 
-                expected_seq_num = (buffer.seqnum + i * buffer.length);
+                //expected_seq_num = (expected_seq_num + i * buffer.length);
             } 
-            build_packet(&ack_pkt, 0, expected_seq_num, isLast, 1, 0, NULL);
+            build_packet(&ack_pkt, 0, expected_seq_num, server_isLast, 1, 0, NULL);
         }
         else {
             build_packet(&ack_pkt, 0, expected_seq_num, buffer.last, 1, 0, NULL);
@@ -105,11 +200,9 @@ int main() {
         printSend(&ack_pkt, 0);
         //printf("%s", buffer.payload);
         //printRecv(&buffer);
-        if (buffer.last)
+        if (server_isLast)
             break;
     }
-
-    //printf("%s", )
 
     fclose(fp);
     close(listen_sockfd);
