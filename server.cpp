@@ -8,6 +8,8 @@
 #include <climits>
 #include <vector>
 
+#define TIMEOUT_MS 750
+
 int main() {
     int listen_sockfd, send_sockfd;
     struct sockaddr_in server_addr, client_addr_from, client_addr_to;
@@ -120,12 +122,12 @@ int main() {
     // TODO: Receive file from the client and save it as output.txt
 
     
-    struct packet data_window[4];
+    struct packet data_window[WINDOW_SIZE];
     bool send_FIN = false;
 
     char server_isLast = 0;
     char client_isLast = 0;
-    for (int i = 0; i < 4; i++)
+    for (int i = 0; i < WINDOW_SIZE; i++)
         data_window[i].length = 0;
 
     clock_t start = clock(), elapsed;
@@ -139,7 +141,7 @@ int main() {
         msec_timer = 1000 * elapsed / CLOCKS_PER_SEC;
         
         // send FIN packet
-        if (send_FIN && msec_timer > 750) {
+        if (send_FIN && msec_timer > TIMEOUT_MS) {
             sendto(send_sockfd, &FIN, sizeof(FIN), 0, 
                 (struct sockaddr *) &client_addr_to, sizeof(client_addr_to));
             printSend(&FIN, 1);
@@ -197,7 +199,7 @@ int main() {
                     server_isLast=1;
                 }
                 int i;
-                for (i = 1; i < 4; i++) {
+                for (i = 1; i < WINDOW_SIZE; i++) {
                     //for the packets in the window
                     if (data_window[i].length != 0) {
                         fprintf(fp, "%.*s", data_window[i].length,data_window[i].payload);
@@ -213,11 +215,11 @@ int main() {
                     }
                     else {
                         int j;
-                        for (j = 0; j < 4 - i; j++){
+                        for (j = 0; j < WINDOW_SIZE - i; j++){
                             //memcpy(&data_window[j], &data_window[j + i], sizeof(data_window[j + i]));
                             data_window[j]=data_window[j+i];
                         }
-                        for (; j < 4; j++){
+                        for (; j < WINDOW_SIZE; j++){
                             data_window[j].length = 0;
                             //data_window[j].payload[0]='\0';
                             //memset(data_window[j].payload, 0, sizeof(data_window[j].payload));

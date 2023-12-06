@@ -78,9 +78,6 @@ int main(int argc, char *argv[]) {
 
     // TODO: Read from file, and initiate reliable data transfer to the server
 
-    int HEADER_SIZE = 2; // only seq_num for now
-    char packet[HEADER_SIZE + PAYLOAD_SIZE];
-    // char packet[PAYLOAD_SIZE];
     unsigned int file_length;
     // char* file_content;
     fseek(fp, 0, SEEK_END);
@@ -95,17 +92,17 @@ int main(int argc, char *argv[]) {
     char server_isLast = 0;
     char client_isLast = 0;
     bool timeout = false;
-    struct packet window[4];
+    struct packet window[WINDOW_SIZE];
     int last_sent_pkt_pos = -1;
     
 
     bool reset = false;
     clock_t start = clock(), elapsed;
-    unsigned int msec_timer = 0;
+    unsigned short msec_timer = 0;
     unsigned int send_base = 0;
     bool start_close = 0;
     unsigned short dup_count = 0;
-    unsigned int last_ACK = 100000;
+    unsigned int last_ACK = 100000; // arbitrary number
     //unsigned int rwnd = 4;
     while (true) {
         if (reset) {
@@ -113,13 +110,21 @@ int main(int argc, char *argv[]) {
             reset = false;
             msec_timer = 0;
         }
+        if (msec_timer > TIMEOUT_MS) {
+            sendto(send_sockfd, &window[0], sizeof(window[0]), 
+                0, (struct sockaddr *) &server_addr_to, addr_size);
+            //printf("timeout\n");
+            printSend(&window[0], 1);
+            reset = true;
+            continue;
+        }
         elapsed = clock() - start;
         msec_timer = 1000 * elapsed / CLOCKS_PER_SEC;
         // if (ACK_received) {
          //   for (int i = last_sent_pkt_pos + 1; i < 4; i++) {
         // last_sent_pkt_pos starts as -1, since no pkts sent at start
 
-        if (last_sent_pkt_pos + 1 < 4) {
+        if (last_sent_pkt_pos + 1 < WINDOW_SIZE) {
             if (last_sent_pkt_pos == -1)
                 reset = true;
             
@@ -131,7 +136,7 @@ int main(int argc, char *argv[]) {
                     0, (struct sockaddr *) &server_addr_to, addr_size);
                 // dont need to create any more packets
                 printSend(&window[0], 0); 
-                last_sent_pkt_pos = 4;
+                last_sent_pkt_pos = WINDOW_SIZE;
             }
             
             if (seq_num != file_packet_size) {
@@ -160,14 +165,6 @@ int main(int argc, char *argv[]) {
                 continue;
             }
         }
-        if (msec_timer > 750) {
-            sendto(send_sockfd, &window[0], sizeof(window[0]), 
-                0, (struct sockaddr *) &server_addr_to, addr_size);
-            //printf("timeout\n");
-            printSend(&window[0], 1);
-            reset = true;
-            continue;
-        }
         if (recvfrom(listen_sockfd, &ack_pkt, sizeof(ack_pkt), MSG_DONTWAIT, 
             (struct sockaddr *) &server_addr_from, &addr_size) > 0) {
             printRecv(&ack_pkt);
@@ -184,20 +181,21 @@ int main(int argc, char *argv[]) {
                 last_sent_pkt_pos = -1;
                 continue;
             }
-            if (ack_num == last_ACK)
+            if (ack_num == last_ACK) {
                 dup_count++;
-            else   
-                dup_count = 0;
-            if (dup_count == 3) {
-                msec_timer = 751;
+                if (dup_count % 3 == 0) {
+                    msec_timer = TIMEOUT_MS + 1;
                 continue;
             }
+            }
+            else   
+                dup_count = 0;
             if (ack_num > send_base) {
                 send_base = ack_num;
                 int i;
-                for (i = 0; i < 4; i++) {
+                for (i = 0; i < WINDOW_SIZE; i++) {
                     if (window[i].seqnum == send_base) {
-                        for (int j = 0; j < 4 - i; j++) {
+                        for (int j = 0; j < WINDOW_SIZE - i; j++) {
                             window[j] = window[j + i];
                             last_sent_pkt_pos = j;
                         }
@@ -205,7 +203,7 @@ int main(int argc, char *argv[]) {
                         break;
                     }
                 }
-                if (i == 4) 
+                if (i == WINDOW_SIZE) 
                     last_sent_pkt_pos = -1;
             }         
             last_ACK = ack_num;
@@ -225,11 +223,11 @@ int main(int argc, char *argv[]) {
     printSend(&FINACK, 0);
     // once FIN received, enter wait state
     start = clock();
-    unsigned int sec_timer = 0;
+    unsigned short sec_timer = 0;
     while (true) {
         elapsed = clock() - start;
         sec_timer = elapsed / CLOCKS_PER_SEC;
-        if (sec_timer > 10) { 
+        if (sec_timer > TIME_WAIT_S) { 
             break; 
             // wait over, shut down
         }
