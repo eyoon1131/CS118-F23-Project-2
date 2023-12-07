@@ -17,7 +17,7 @@
 #define MAX_SEQUENCE 1024
 
 // our implementation
-#define TIMEOUT_MS 750
+#define TIMEOUT_MS 500
 #define TIME_WAIT_S 60
 
 

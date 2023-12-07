@@ -1,15 +1,9 @@
 #include <arpa/inet.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include <unistd.h>
-#include <math.h>
 #include "utils.h"
-#include <climits>
-#include <vector>
 #include <time.h>
-
-#define TIMEOUT_MS 750
 
 int main() {
     int listen_sockfd, send_sockfd;
@@ -56,84 +50,14 @@ int main() {
     // Open the target file for writing (always write to output.txt)
     FILE *fp = fopen("output.txt", "wb");
 
-    // // TODO: Receive file from the client and save it as output.txt
-
-    
-    // char data_window[4][PAYLOAD_SIZE + 1];
-    // char server_isLast = 0;
-    // char client_isLast = 0;
-    // for (int i = 0; i < 4; i++)
-    //     data_window[i][0] = '\0';
-    // while (true) {
-    //     recv_len = recvfrom(listen_sockfd, &buffer, sizeof(buffer), 0, 
-    //         (struct sockaddr *) &client_addr_from, &addr_size);
-    //     printRecv(&buffer);
-    //     printf("expected seq num: %d\n", expected_seq_num);
-    //     //printf("payload: %s\n",buffer.payload);
-    //     if (buffer.last)
-    //         break;
-    //     // if (buffer.length < PAYLOAD_SIZE)
-    //     //     isLast = 1;
-    //     if (buffer.seqnum >= expected_seq_num) {
-    //         char payload[PAYLOAD_SIZE + 1];
-    //         memcpy(payload, buffer.payload, buffer.length);
-    //         payload[PAYLOAD_SIZE] = '\0';
-    //         unsigned int window_pos = ceil((double)(buffer.seqnum - expected_seq_num) / PAYLOAD_SIZE);
-    //         memcpy(data_window[window_pos], payload, sizeof(payload));
-    //         if (buffer.seqnum == expected_seq_num){
-    //             fprintf(fp, "%s", data_window[0]);
-    //             //printf("%s\n",data_window[0]);
-    //             expected_seq_num+=strlen(data_window[0]);
-    //             int i;
-    //             for (i = 1; i < 4; i++) {
-    //                 //for the packets in the window
-    //                 if (data_window[i][0] != '\0') {
-    //                     fprintf(fp, "%s", data_window[i]);
-    //                     expected_seq_num+=strlen(data_window[i]);
-
-    //                 }
-    //                 else {
-    //                     int j;
-    //                     for (j = 0; j < 4 - i; j++)
-    //                         memcpy(data_window[j], data_window[j + i], sizeof(data_window[j + i]));
-    //                     for (; j < 4; j++)
-    //                         data_window[j][0] = '\0';
-    //                     break;
-    //                 }
-                    
-    //             }                 
-    //             //expected_seq_num = (expected_seq_num + i * buffer.length);
-    //         } 
-    //         build_packet(&ack_pkt, 0, expected_seq_num, server_isLast, 1, 0, NULL);
-    //     }
-    //     else {
-    //         build_packet(&ack_pkt, 0, expected_seq_num, buffer.last, 1, 0, NULL);
-    //     }
-    //     sendto(send_sockfd, &ack_pkt, sizeof(ack_pkt), 0, 
-    //         (struct sockaddr *) &client_addr_to, sizeof(client_addr_to));
-    //     printSend(&ack_pkt, 0);
-    //     //printf("%s", buffer.payload);
-    //     //printRecv(&buffer);
-    //     if (buffer.last)
-    //         break;
-    // }
-
-    //printf("%s", )
-
     // TODO: Receive file from the client and save it as output.txt
 
-    
-    int window_size = 4;
-    //struct packet data_window[window_size];
-    bool send_FIN = false;
     struct packet* data_arr;
-
-    // for (int i = 0; i < window_size; i++)
-    //     data_window[i].length = 0;
 
     clock_t start = clock(), elapsed;
     unsigned int msec_timer = 0;
-
+    
+    bool send_FIN = false;
     struct packet FIN;
     build_packet(&FIN, 0, 0, 1, 0, 0, NULL, 0);
 
@@ -162,13 +86,9 @@ int main() {
             first_recv = false;
         }
 
-        //printf("expected seq num: %d\n", expected_seq_num);
-        //printf("payload: %s\n",buffer.payload);
-
         // if packet is FINACK
         if (send_FIN && buffer.ack)
             break;
-
 
         // if packet is FIN packet from client send FINACK
         if (buffer.last) {
@@ -181,25 +101,11 @@ int main() {
             continue;
         }
 
-
-        // if (buffer.length < PAYLOAD_SIZE)
-        //     isLast = 1;
         if (buffer.seqnum >= expected_seq_num) {
-            //char payload[PAYLOAD_SIZE + 1];
-            //memcpy(payload, buffer.payload, buffer.length);
-            //payload[PAYLOAD_SIZE] = '\0';
-            // unsigned int window_pos = ceil((double)(buffer.seqnum - expected_seq_num) / PAYLOAD_SIZE);
-            unsigned short window_pos = buffer.seqnum - expected_seq_num;
-            //memcpy(&data_window[window_pos], &buffer, sizeof(buffer));
             data_arr[buffer.seqnum] = buffer;
-            // if(data_window[window_pos].length<PAYLOAD_SIZE){
-            //    // printf("payload altered\n");
-            //     data_window[window_pos].payload[data_window[window_pos].length]='\0';
-            // }
 
             if (buffer.seqnum == expected_seq_num){
                 fprintf(fp, "%.*s", data_arr[buffer.seqnum].length, data_arr[buffer.seqnum].payload);
-                //printf("payload: %.*s\n",data_window[0].length,data_window[0].payload);
                 expected_seq_num++;
                 data_arr[buffer.seqnum].length = 0;
 
@@ -208,26 +114,13 @@ int main() {
                     //for the packets that have been received and buffered
                     if (data_arr[i].length != 0) {
                         fprintf(fp, "%.*s", data_arr[i].length, data_arr[i].payload);
-                        //expected_seq_num+=data_window[i].length;
                         expected_seq_num++;
 
                         // mark data that have been uploaded to file
-                        data_arr[i].length = 0;
-                        //
+                        data_arr[i].length = 0;                      
                     }
-                    else {
-                        // int j;
-                        // for (j = 0; j < window_size - i; j++){
-                        //     //memcpy(&data_window[j], &data_window[j + i], sizeof(data_window[j + i]));
-                        //     data_window[j]=data_window[j+i];
-                        // }
-                        // for (; j < window_size; j++){
-                        //     data_window[j].length = 0;
-                        //     //data_window[j].payload[0]='\0';
-                        //     //memset(data_window[j].payload, 0, sizeof(data_window[j].payload));
-                        // }
+                    else 
                         break;
-                    }
                     
                 }                 
                 //expected_seq_num = (expected_seq_num + i * buffer.length);
@@ -239,20 +132,9 @@ int main() {
         }
         sendto(send_sockfd, &ack_pkt, sizeof(ack_pkt), 0, 
             (struct sockaddr *) &client_addr_to, sizeof(client_addr_to));
-        //printSend(&ack_pkt, 0);
-        //printf("%s", buffer.payload);
-        //printRecv(&buffer);
-        // if (server_isLast){
-        //     for(int i =0;i<3;i++){
-        //         sendto(send_sockfd, &ack_pkt, sizeof(ack_pkt), 0,  (struct sockaddr *) &client_addr_to, sizeof(client_addr_to));
-        //          printSend(&ack_pkt, 0);
-        //     }
-        //     break;
-        // }
     }
 
     delete[] data_arr;
-
     fclose(fp);
     close(listen_sockfd);
     close(send_sockfd);
