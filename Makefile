@@ -6,8 +6,8 @@ all: clean build
 default: build
 
 build: server.cpp client.cpp
-	gcc -Wall -Wextra -o server server.cpp -lm
-	gcc -Wall -Wextra -o client client.cpp -lm
+	gcc -Wall -Wextra -o server server.cpp -lm -lstdc++
+	gcc -Wall -Wextra -o client client.cpp -lm -lstdc++
 
 clean:
 	rm -f server client output.txt project2.zip

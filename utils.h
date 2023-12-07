@@ -31,16 +31,18 @@ struct packet {
     char last;
     unsigned int length;
     char payload[PAYLOAD_SIZE];
+    unsigned int file_packet_size;
 };
 
 // Utility function to build a packet
-void build_packet(struct packet* pkt, unsigned int seqnum, unsigned int acknum, char last, char ack,unsigned int length, const char* payload) {
+void build_packet(struct packet* pkt, unsigned int seqnum, unsigned int acknum, char last, char ack,unsigned int length, const char* payload, int file_packet_size) {
     pkt->seqnum = seqnum;
     pkt->acknum = acknum;
     pkt->ack = ack;
     pkt->last = last;
     pkt->length = length;
     memcpy(pkt->payload, payload, length);
+    pkt->file_packet_size = file_packet_size;
 }
 
 // Utility function to print a packet
