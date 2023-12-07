@@ -12,13 +12,13 @@
 #define SERVER_PORT 6002
 #define CLIENT_PORT_TO 5001
 #define PAYLOAD_SIZE 1024
-#define WINDOW_SIZE 20
+#define WINDOW_SIZE 16
 #define TIMEOUT 2
 #define MAX_SEQUENCE 1024
 
 // our implementation
 #define TIMEOUT_MS 750
-#define TIME_WAIT_S 10
+#define TIME_WAIT_S 60
 
 
 

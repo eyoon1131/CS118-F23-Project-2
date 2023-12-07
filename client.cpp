@@ -6,7 +6,7 @@
 #include <time.h>
 #include <string>
 #include "utils.h"
-#include <math.h>
+#include <cmath>
 
 
 int main(int argc, char *argv[]) {
@@ -78,7 +78,6 @@ int main(int argc, char *argv[]) {
 
     // TODO: Read from file, and initiate reliable data transfer to the server
 
-    unsigned int file_length;
     // char* file_content;
     fseek(fp, 0, SEEK_END);
     // file_length = ftell(fp);
@@ -91,7 +90,6 @@ int main(int argc, char *argv[]) {
     unsigned int expected_seq_num = 0;
     char server_isLast = 0;
     char client_isLast = 0;
-    bool timeout = false;
     struct packet window[WINDOW_SIZE];
     int last_sent_pkt_pos = -1;
     
@@ -139,7 +137,7 @@ int main(int argc, char *argv[]) {
                 last_sent_pkt_pos = WINDOW_SIZE;
             }
             
-            if (seq_num != file_packet_size) {
+            if (seq_num < file_packet_size) {
                 unsigned int bytes_read = fread(buffer, 1, PAYLOAD_SIZE, fp);
                 // if (seq_num+bytes_read == file_length) {
                 //     //buffer[bytes_read] = '\0';

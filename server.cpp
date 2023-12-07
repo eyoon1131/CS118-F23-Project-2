@@ -7,6 +7,7 @@
 #include "utils.h"
 #include <climits>
 #include <vector>
+#include <time.h>
 
 #define TIMEOUT_MS 750
 
@@ -125,8 +126,6 @@ int main() {
     struct packet data_window[WINDOW_SIZE];
     bool send_FIN = false;
 
-    char server_isLast = 0;
-    char client_isLast = 0;
     for (int i = 0; i < WINDOW_SIZE; i++)
         data_window[i].length = 0;
 
@@ -195,9 +194,6 @@ int main() {
                 expected_seq_num++;
                 data_window[0].length=0;
 
-                if(data_window[0].last){
-                    server_isLast=1;
-                }
                 int i;
                 for (i = 1; i < WINDOW_SIZE; i++) {
                     //for the packets in the window
@@ -209,9 +205,6 @@ int main() {
                         //reset datawindow:
                         data_window[i].length=0;
                         //
-                        if(data_window[i].last){
-                            server_isLast=1;
-                        }
                     }
                     else {
                         int j;
