@@ -1,2 +1,6 @@
-Please concisely describe your congestion control scheme here.
-No need to be verbose, brief descriptions/bullet points are preferred.
+• Implemented reliable data transfer and congestion control protocol as specified in lecture/textbook
+• In our implementation sstresh is initialized to 15 and is halved upon packet loss
+• uses cumulative ACKs as seen in TCP taught in class
+• for congestion control, our protocol follows TCP, starting in slow start phase, entering congestion avoidance when window size reaches ssthresh and enters fast recovery if fast retransfer is triggered
+• uses fast retransmit where upon 3 duplicate ACKs being received packet is retransferred
+• server side buffers out of order packets
