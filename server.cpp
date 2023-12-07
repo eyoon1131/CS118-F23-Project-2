@@ -16,7 +16,7 @@ int main() {
     struct sockaddr_in server_addr, client_addr_from, client_addr_to;
     struct packet buffer;
     socklen_t addr_size = sizeof(client_addr_from);
-    unsigned int expected_seq_num = 0; // first unsent byte
+    unsigned short expected_seq_num = 0; // first unsent byte
     int recv_len;
     struct packet ack_pkt;
 
@@ -147,7 +147,7 @@ int main() {
         if (send_FIN && msec_timer > TIMEOUT_MS) {
             sendto(send_sockfd, &FIN, sizeof(FIN), 0, 
                 (struct sockaddr *) &client_addr_to, sizeof(client_addr_to));
-            printSend(&FIN, 1);
+            //printSend(&FIN, 1);
             start = clock();
             continue;
         } 
@@ -156,7 +156,7 @@ int main() {
             (struct sockaddr *) &client_addr_from, &addr_size);
         if (recv_len <= 0) 
             continue;    
-        printRecv(&buffer);
+        //printRecv(&buffer);
         if (first_recv) {
             data_arr = new struct packet[buffer.file_packet_size + 1];
             first_recv = false;
@@ -176,7 +176,7 @@ int main() {
             build_packet(&FINACK, 0, buffer.seqnum + 1, 1, 1, 0, NULL, 0);
             sendto(send_sockfd, &FINACK, sizeof(FINACK), 0, 
                 (struct sockaddr *) &client_addr_to, sizeof(client_addr_to));
-            printSend(&FINACK, 0);
+            //printSend(&FINACK, 0);
             send_FIN = 1;
             continue;
         }
@@ -239,7 +239,7 @@ int main() {
         }
         sendto(send_sockfd, &ack_pkt, sizeof(ack_pkt), 0, 
             (struct sockaddr *) &client_addr_to, sizeof(client_addr_to));
-        printSend(&ack_pkt, 0);
+        //printSend(&ack_pkt, 0);
         //printf("%s", buffer.payload);
         //printRecv(&buffer);
         // if (server_isLast){

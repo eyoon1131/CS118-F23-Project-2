@@ -19,8 +19,8 @@ int main(int argc, char *argv[]) {
     struct packet pkt;
     struct packet ack_pkt;
     char buffer[PAYLOAD_SIZE];
-    unsigned int seq_num = 0;
-    unsigned int ack_num = 0;
+    unsigned short seq_num = 0;
+    unsigned short ack_num = 0;
     char last = 0;
     char ack = 0;
 
@@ -83,15 +83,15 @@ int main(int argc, char *argv[]) {
     // char* file_content;
     fseek(fp, 0, SEEK_END);
     // file_length = ftell(fp);
-    unsigned int file_packet_size = ceil(ftell(fp) / (double) PAYLOAD_SIZE);
-        printf("file length in packets: %d\n", file_packet_size);
+    unsigned short file_packet_size = ceil(ftell(fp) / (double) PAYLOAD_SIZE);
+        //printf("file length in packets: %d\n", file_packet_size);
 
     // create array of all packets
     fseek(fp, 0, SEEK_SET);
     // need one more packet for FIN
     struct packet* pkt_arr = new struct packet[file_packet_size + 1];
     for (int i = 0; i < file_packet_size; i++) {
-        unsigned int bytes_read = fread(buffer, 1, PAYLOAD_SIZE, fp);
+        unsigned short bytes_read = fread(buffer, 1, PAYLOAD_SIZE, fp);
         build_packet(&pkt_arr[i], i, 0, 0, 0, bytes_read, buffer, file_packet_size);
     }
     // FIN packet
@@ -100,7 +100,7 @@ int main(int argc, char *argv[]) {
     // file_content = (char*) malloc(file_length);
     // fseek(fp, 0, SEEK_SET);
     seq_num = 0;
-    unsigned int expected_seq_num = 0;
+    unsigned short expected_seq_num = 0;
     char server_isLast = 0;
     char client_isLast = 0;
     //struct packet window[WINDOW_SIZE];
@@ -120,7 +120,7 @@ int main(int argc, char *argv[]) {
     unsigned int last_ACK = 100000; // arbitrary number
     //unsigned int rwnd = 4;
 
-    int ssthresh = 13;
+    int ssthresh = 15;
 
     double window_size = 1; // will be dynamic
     double new_window_size; // storage for updating window_size
@@ -137,11 +137,12 @@ int main(int argc, char *argv[]) {
             sendto(send_sockfd, &pkt_arr[window[0]], sizeof(pkt_arr[window[0]]),
                 0, (struct sockaddr *) &server_addr_to, addr_size);
             //printf("timeout\n");
-            printSend(&pkt_arr[window[0]], 1);
+            //printSend(&pkt_arr[window[0]], 1);
             reset = true;
             ssthresh = fmax(floor(window_size) / 2, 2);
             window_size = 1;
-            state = 0;
+            if (state != 2)
+                state = 0;
             continue;
         }
         elapsed = clock() - start;
@@ -164,7 +165,7 @@ int main(int argc, char *argv[]) {
                 sendto(send_sockfd, &pkt_arr[window[0]], sizeof(pkt_arr[window[0]]), 
                     0, (struct sockaddr *) &server_addr_to, addr_size);
                 // dont need to create any more packets
-                printSend(&pkt_arr[window[0]], 0); 
+                //printSend(&pkt_arr[window[0]], 0); 
                 last_sent_pkt_pos = floor(window_size);
             }
             
@@ -183,7 +184,7 @@ int main(int argc, char *argv[]) {
                     sizeof(pkt_arr[window[last_sent_pkt_pos + 1]]), 
                     0, (struct sockaddr *) &server_addr_to, addr_size);
                 //printSend(&window[last_sent_pkt_pos + 1], 0);
-                printSend(&pkt_arr[window[last_sent_pkt_pos + 1]], 0);
+                //printSend(&pkt_arr[window[last_sent_pkt_pos + 1]], 0);
                 //printf("%d\n", last_sent_pkt_pos + 1);
                 
 
@@ -197,7 +198,7 @@ int main(int argc, char *argv[]) {
         }
         if (recvfrom(listen_sockfd, &ack_pkt, sizeof(ack_pkt), MSG_DONTWAIT, 
             (struct sockaddr *) &server_addr_from, &addr_size) > 0) {
-            printRecv(&ack_pkt);
+            //printRecv(&ack_pkt);
             // printf("dup_count: %d\n", dup_count);
             // printf("state: %d\n", state);
             // printf("window_size: %f\n", window_size);
@@ -276,12 +277,12 @@ int main(int argc, char *argv[]) {
     struct packet FIN;
     recvfrom(listen_sockfd, &FIN, sizeof(FIN), 0, 
             (struct sockaddr *) &server_addr_from, &addr_size);
-    printRecv(&FIN);
+    //printRecv(&FIN);
     struct packet FINACK;
     build_packet(&FINACK, 0, 0, 1, 1, 0, NULL, 0);
     sendto(send_sockfd, &FINACK, sizeof(FINACK), 
         0, (struct sockaddr *) &server_addr_to, addr_size);
-    printSend(&FINACK, 0);
+    //printSend(&FINACK, 0);
     // once FIN received, enter wait state
     start = clock();
     unsigned short sec_timer = 0;
@@ -295,11 +296,11 @@ int main(int argc, char *argv[]) {
         // if another FIN received, then FINACK not received by server
         if (recvfrom(listen_sockfd, &ack_pkt, sizeof(ack_pkt), MSG_DONTWAIT, 
             (struct sockaddr *) &server_addr_from, &addr_size) > 0) {
-            printRecv(&ack_pkt);
+            //printRecv(&ack_pkt);
             sec_timer = 0;
             sendto(send_sockfd, &FINACK, sizeof(FINACK), 
                 0, (struct sockaddr *) &server_addr_to, addr_size);
-            printSend(&FINACK, 1);
+            //printSend(&FINACK, 1);
         }
     }
     

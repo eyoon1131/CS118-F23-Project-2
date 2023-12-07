@@ -11,7 +11,7 @@
 #define CLIENT_PORT 6001
 #define SERVER_PORT 6002
 #define CLIENT_PORT_TO 5001
-#define PAYLOAD_SIZE 1024
+#define PAYLOAD_SIZE 1190
 #define WINDOW_SIZE 16
 #define TIMEOUT 2
 #define MAX_SEQUENCE 1024
@@ -25,13 +25,13 @@
 // Packet Layout
 // You may change this if you want to
 struct packet {
-    unsigned int seqnum;
-    unsigned int acknum;
+    unsigned short seqnum;
+    unsigned short acknum;
     char ack;
     char last;
-    unsigned int length;
+    unsigned short length;
     char payload[PAYLOAD_SIZE];
-    unsigned int file_packet_size;
+    unsigned short file_packet_size;
 };
 
 // Utility function to build a packet
