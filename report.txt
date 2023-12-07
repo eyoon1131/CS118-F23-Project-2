@@ -1,6 +1,11 @@
 • Implemented reliable data transfer and congestion control protocol as specified in lecture/textbook
-• In our implementation sstresh is initialized to 15 and is halved upon packet loss
+• In our implementation sstresh is initialized to 15 and is halved upon timeout due to packet loss while cwnd is reduced to 1, entering slow start
 • uses cumulative ACKs as seen in TCP taught in class
 • for congestion control, our protocol follows TCP, starting in slow start phase, entering congestion avoidance when window size reaches ssthresh and enters fast recovery if fast retransfer is triggered
+• in slow start, window size is increased by 1 upon each received ACK (exponential growth)
+• in congestion avoidance, window size is increased by 1/window size upon each new ACK (additive growth)
 • uses fast retransmit where upon 3 duplicate ACKs being received packet is retransferred
-• server side buffers out of order packets
+• upon entering fast retransmit, ssthresh is halved, and window is set to ssthresh + 3 (multipicative decrease)
+• server side buffers out of order packets so that client need not resend already received packets
+• client only resends lowest unACKed packet upon timeout or fast retransmit
+• upon receipt of new ACK in fast recovery, window size is reduced to ssthresh and enters slow start
